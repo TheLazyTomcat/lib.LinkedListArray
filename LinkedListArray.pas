@@ -1,3 +1,212 @@
+{-------------------------------------------------------------------------------
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+-------------------------------------------------------------------------------}
+{===============================================================================
+
+  Linked list array
+
+  ©František Milt 2018-10-21
+
+  Version 0.9a (requires extensive testing)
+
+  Dependencies:
+    AuxTypes     - github.com/ncs-sniper/Lib.AuxTypes
+    AuxClasses   - github.com/ncs-sniper/Lib.AuxClasses
+    StrRect      - github.com/ncs-sniper/Lib.StrRect
+    IndexSorters - github.com/ncs-sniper/Lib.IndexSorters
+
+===============================================================================}
+(*******************************************************************************
+
+  Not implemented as a generic class because of backward compatibility with
+  older Delphi.
+  To create a derived/specialized class from base class, use following template
+  and replace @ClassName@ with a class identifier and @Type@ with identifier of
+  used type. Also remember to implement proper comparison function for a chosen
+  type.
+  Optional methods are not required to be implemented, but they might be usefull
+  in some instances (eg. when item contains reference-counted types, pointers
+  or object references).
+
+==  Declaration template  ======================================================
+--------------------------------------------------------------------------------
+
+  @ClassName@ = class(TLinkedListArray)
+  protected
+    Function GetItem(ListIndex: TListIndex): @Type@; virtual;
+    procedure SetItem(ListIndex: TListIndex; Value: @Type@); virtual;
+  //procedure PayloadInit(Payload: PLinkedListArrayPayload); override;
+  //procedure PayloadFinal(Payload: PLinkedListArrayPayload); override;
+  //procedure PayloadCopy(SrcPayload,DstPayload: PLinkedListArrayPayload); override;
+    Function PayloadCompare(Payload1,Payload2: PLinkedListArrayPayload): Integer; override;
+  //Function PayloadEquals(Payload1,Payload2: PLinkedListArrayPayload): Boolean; override;
+  public
+    constructor Create;
+    Function First: @Type@; reintroduce;
+    Function Last: @Type@; reintroduce;
+    Function IndicesOf(Item: @Type@; out ArrayIndex: TArrayIndex; out ListIndex: TListIndex): Boolean; reintroduce;
+    Function ArrayIndexOf(Item: @Type@): TArrayIndex; reintroduce;
+    Function ListIndexOf(Item: @Type@): TListIndex; reintroduce;
+    Function Add(Item: @Type@): Integer; reintroduce;
+    procedure Insert(ListIndex: TListIndex; Item: @Type@); reintroduce;
+    Function Extract(Item: @Type@): @Type@; reintroduce;
+    Function Remove(Item: @Type@): Integer; reintroduce;
+    property Items[ListIndex: TListIndex]: @Type@ read GetItem write SetItem; default;
+  end;
+
+==  Implementation template ====================================================
+--------------------------------------------------------------------------------
+
+Function @ClassName@.GetItem(ListIndex: TListIndex): @Type@;
+begin
+Result := @Type@(Pointer(GetPayloadPtrListIndex(ListIndex))^);
+end;
+
+//------------------------------------------------------------------------------
+
+procedure @ClassName@.SetItem(ListIndex: TListIndex; Value: @Type@);
+begin
+SetPayloadPtrListIndex(ListIndex,PLinkedListArrayPayload(@Value));
+end;
+
+//------------------------------------------------------------------------------
+
+// Method called for each payload that is implicitly (eg. when changing the
+// Count property to a higher number) added to the list. It is NOT called when
+// payload is added explicitly (e.g. using method Add).
+// Payload is filled with zeroes in default implementation.
+
+//procedure @ClassName@.PayloadInit(Payload: PLinkedListArrayPayload);
+//begin
+//{$MESSAGE WARN 'Implement payload initialization to suit actual type.'}
+//end;
+
+//------------------------------------------------------------------------------
+
+// Method called for each payload that is implicitly (e.g. when changing the
+// Count property to a lower number) or explicitly (e.g. using method Delete)
+// removed from the list.
+// Nothing is done with the payload in default behavior.
+
+//procedure @ClassName@.PayloadFinal(Payload: PLinkedListArrayPayload);
+//begin
+//{$MESSAGE WARN 'Implement payload finalization to suit actual type.'}
+//end;
+
+//------------------------------------------------------------------------------
+
+// Called when an payload is copied to the list from an external source.
+// Can be used for example to creaty copies of objects instead of just copying
+// their instance reference.
+// Payload is copied without any further processing in default implementation.
+
+//procedure @ClassName@.PayloadCopy(SrcPayload,DstPayload: PLinkedListArrayPayload);
+//begin
+//{$MESSAGE WARN 'Implement payload copy to suit actual type.'}
+//end;
+
+//------------------------------------------------------------------------------
+
+// This method is called when there is a need to compare two payloads, for
+// example when sorting the list.
+// Must return negative number when Payload1 is higher/larger than Payload2
+// (ie. they are in wrong order), zero when they are equal and positive number
+// when Payload1 is lower/smaller than Payload2 (when they are in correct order).
+// Has no default implementation.
+// This method must be implemented in derived classes!
+
+Function @ClassName@.PayloadCompare(Payload1,Payload2: PLinkedListArrayPayload): Integer;
+begin
+{$MESSAGE WARN 'Implement comparison to suit actual type.'}
+end;
+
+//------------------------------------------------------------------------------
+
+// Called when two payloads are compared for equality (e.g. when searching for a
+// particular item).
+// In default implementation, it calls PayloadCompare and when it returns zero,
+// payloads are considered to be equal.
+  
+//Function @ClassName@.PayloadEquals(Payload1,Payload2: PLinkedListArrayPayload): Boolean;
+//begin
+//{$MESSAGE WARN 'Implement equality comparison to suit actual type.'}
+//end;
+
+//==============================================================================
+
+constructor @ClassName@.Create;
+begin
+inherited Create(SizeOf(Integer));
+end;
+
+//------------------------------------------------------------------------------
+
+Function @ClassName@.First: @Type@;
+begin
+Result := @Type@(Pointer(inherited First)^);
+end;
+
+//------------------------------------------------------------------------------
+
+Function @ClassName@.Last: @Type@;
+begin
+Result := @Type@(Pointer(inherited Last)^);
+end;
+
+//------------------------------------------------------------------------------
+
+Function @ClassName@.IndicesOf(Item: @Type@; out ArrayIndex: TArrayIndex; out ListIndex: TListIndex): Boolean;
+begin
+Result := inherited IndicesOf(PLinkedListArrayPayload(@Item),ArrayIndex,ListIndex);
+end;
+
+//------------------------------------------------------------------------------
+
+Function @ClassName@.ArrayIndexOf(Item: @Type@): TArrayIndex;
+begin
+Result := inherited ArrayIndexOf(PLinkedListArrayPayload(@Item));
+end;
+
+//------------------------------------------------------------------------------
+
+Function @ClassName@.ListIndexOf(Item: @Type@): TListIndex;
+begin
+Result := inherited ListIndexOf(PLinkedListArrayPayload(@Item));
+end;
+
+//------------------------------------------------------------------------------
+
+Function @ClassName@.Add(Item: @Type@): TListIndex;
+begin
+Result := inherited Add(PLinkedListArrayPayload(@Item));
+end;
+
+//------------------------------------------------------------------------------
+
+procedure @ClassName@.Insert(ListIndex: TListIndex; Item: @Type@);
+begin
+inherited Insert(ListIndex,PLinkedListArrayPayload(@Item));
+end;
+
+//------------------------------------------------------------------------------
+
+Function @ClassName@.Extract(Item: @Type@): @Type@;
+begin
+Result := @Type@(Pointer(inherited Extract(PLinkedListArrayPayload(@Item)))^);
+end;
+
+//------------------------------------------------------------------------------
+
+Function @ClassName@.Remove(Item: @Type@): TListIndex;
+begin
+Result := inherited Remove(PLinkedListArrayPayload(@Item));
+end;
+
+*******************************************************************************)
 unit LinkedListArray;
 
 {$IFDEF FPC}
@@ -12,6 +221,13 @@ interface
 uses
   Classes,
   AuxTypes, AuxClasses;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                                TLinkedListArray
+--------------------------------------------------------------------------------
+===============================================================================}
 
 type
   TListIndex  = Integer;
@@ -30,6 +246,10 @@ type
     Payload:    TLinkedListArrayPayload;
   end;
   PLinkedListArrayItem = ^TLinkedListArrayItem;
+
+{===============================================================================
+    TLinkedListArray - class declaration
+===============================================================================}
 
   TLinkedListArray = class(TCustomListObject)
   private
@@ -66,11 +286,11 @@ type
     Function CheckListIndexAndRaise(ListIndex: TListIndex; CallingMethod: String = 'CheckListIndexAndRaise'): Boolean; virtual;
     procedure RaiseError(const ErrorMessage: String; Values: array of const); overload; virtual;
     procedure RaiseError(const ErrorMessage: String); overload; virtual;
-    procedure PayloadInit(Payload: PLinkedListArrayPayload); virtual;                       // <<< *
-    procedure PayloadFinal(Payload: PLinkedListArrayPayload); virtual;                      // <<< *
-    procedure PayloadCopy(SrcPayload,DstPayload: PLinkedListArrayPayload); virtual;         // <<< *
-    Function PayloadCompare(Payload1,Payload2: PLinkedListArrayPayload): Integer; virtual;  // <<<
-    Function PayloadEquals(Payload1,Payload2: PLinkedListArrayPayload): Boolean; virtual;   // <<< *
+    procedure PayloadInit(Payload: PLinkedListArrayPayload); virtual;
+    procedure PayloadFinal(Payload: PLinkedListArrayPayload); virtual;
+    procedure PayloadCopy(SrcPayload,DstPayload: PLinkedListArrayPayload); virtual;
+    Function PayloadCompare(Payload1,Payload2: PLinkedListArrayPayload): Integer; virtual;
+    Function PayloadEquals(Payload1,Payload2: PLinkedListArrayPayload): Boolean; virtual;
     procedure DoChange; virtual;    
     procedure FinalizeAllItems; virtual;
     procedure Decouple(ArrayIndex: TArrayIndex); virtual;
@@ -96,18 +316,18 @@ type
     Function NextByList(ListIndex: TListIndex): TArrayIndex; virtual;
     Function FirstArrayIndex: TArrayIndex; virtual;
     Function LastArrayIndex: TArrayIndex; virtual;
-    Function First: PLinkedListArrayPayload; virtual;   // <<<
-    Function Last: PLinkedListArrayPayload; virtual;    // <<<
+    Function First: PLinkedListArrayPayload; virtual;
+    Function Last: PLinkedListArrayPayload; virtual;
     Function CheckIndex(Index: Integer): Boolean; override;    
     Function GetArrayIndex(ListIndex: TListIndex): TArrayIndex; virtual;
     Function GetListIndex(ArrayIndex: TArrayIndex): TListIndex; virtual;
-    Function IndicesOf(Item: Pointer; out ArrayIndex: TArrayIndex; out ListIndex: TListIndex): Boolean; virtual;  // <<<
-    Function ArrayIndexOf(Item: Pointer): TArrayIndex; virtual;                                                   // <<<
-    Function ListIndexOf(Item: Pointer): TListIndex; virtual;                                                     // <<<
-    Function Add(Item: Pointer): TListIndex; virtual;                 // <<<
-    procedure Insert(ListIndex: TListIndex; Item: Pointer); virtual;  // <<<
-    Function Extract(Item: Pointer): Pointer; virtual;                // <<<
-    Function Remove(Item: Pointer): TListIndex; virtual;              // <<<
+    Function IndicesOf(Item: Pointer; out ArrayIndex: TArrayIndex; out ListIndex: TListIndex): Boolean; virtual;
+    Function ArrayIndexOf(Item: Pointer): TArrayIndex; virtual;
+    Function ListIndexOf(Item: Pointer): TListIndex; virtual;
+    Function Add(Item: Pointer): TListIndex; virtual;
+    procedure Insert(ListIndex: TListIndex; Item: Pointer); virtual;
+    Function Extract(Item: Pointer): Pointer; virtual;
+    Function Remove(Item: Pointer): TListIndex; virtual;
     procedure Delete(ListIndex: TListIndex); virtual;
     procedure Move(SrcListIndex,DstListIndex: TListIndex); virtual;
     procedure Exchange(ListIndex1,ListIndex2: TListIndex); virtual;
@@ -131,6 +351,15 @@ type
     property OnChangeCallback: TNotifyCallback read fOnChangeCallback write fOnChangeCallback;
   end;
 
+{===============================================================================
+--------------------------------------------------------------------------------
+                            TIntegerLinkedListArray
+--------------------------------------------------------------------------------
+===============================================================================} 
+{===============================================================================
+    TIntegerLinkedListArray - class declaration
+===============================================================================}
+
   TIntegerLinkedListArray = class(TLinkedListArray)
   protected
     Function GetItem(ListIndex: TListIndex): Integer; virtual;
@@ -143,10 +372,10 @@ type
     Function IndicesOf(Item: Integer; out ArrayIndex: TArrayIndex; out ListIndex: TListIndex): Boolean; reintroduce;
     Function ArrayIndexOf(Item: Integer): TArrayIndex; reintroduce;
     Function ListIndexOf(Item: Integer): TListIndex; reintroduce;
-    Function Add(Item: Integer): Integer; reintroduce;
+    Function Add(Item: Integer): TListIndex; reintroduce;
     procedure Insert(ListIndex: TListIndex; Item: Integer); reintroduce;
     Function Extract(Item: Integer): Integer; reintroduce;
-    Function Remove(Item: Integer): Integer; reintroduce;
+    Function Remove(Item: Integer): TListIndex; reintroduce;
     property Items[ListIndex: TListIndex]: Integer read GetItem write SetItem; default;
   end;
 
@@ -163,10 +392,21 @@ uses
   {$DEFINE W5024:={$WARN 5024 OFF}} // Parameter "$1" not used
 {$ENDIF}
 
+{===============================================================================
+--------------------------------------------------------------------------------
+                                TLinkedListArray
+--------------------------------------------------------------------------------
+===============================================================================}
+
 const
   LLA_FLAG_USED = $00000001;
 
-//==============================================================================
+{===============================================================================
+    TLinkedListArray - class implementation
+===============================================================================}
+{-------------------------------------------------------------------------------
+    TLinkedListArray - protected methods
+-------------------------------------------------------------------------------}
 
 Function TLinkedListArray.PayloadPtrFromItemPtr(ItemPtr: PLinkedListArrayItem): PLinkedListArrayPayload;
 begin
@@ -636,7 +876,9 @@ If Index1 <> Index2 then
   end;
 end;
 
-//==============================================================================
+{-------------------------------------------------------------------------------
+    TLinkedListArray - public methods
+-------------------------------------------------------------------------------}
 
 constructor TLinkedListArray.Create(PayloadSize: TMemSize);
 begin
@@ -1544,9 +1786,18 @@ finally
 end;
 end;
 
-//******************************************************************************
-//******************************************************************************
-//******************************************************************************
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                            TIntegerLinkedListArray
+--------------------------------------------------------------------------------
+===============================================================================}
+{===============================================================================
+    TIntegerLinkedListArray - class declaration
+===============================================================================}
+{-------------------------------------------------------------------------------
+    TIntegerLinkedListArray - private methods
+-------------------------------------------------------------------------------}
 
 Function TIntegerLinkedListArray.GetItem(ListIndex: TListIndex): Integer;
 begin
@@ -1567,7 +1818,9 @@ begin
 Result := Integer(Pointer(Payload2)^) - Integer(Pointer(Payload1)^);
 end;
 
-//==============================================================================
+{-------------------------------------------------------------------------------
+    TIntegerLinkedListArray - public methods
+-------------------------------------------------------------------------------}
 
 constructor TIntegerLinkedListArray.Create;
 begin
@@ -1611,7 +1864,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function TIntegerLinkedListArray.Add(Item: Integer): Integer;
+Function TIntegerLinkedListArray.Add(Item: Integer): TListIndex;
 begin
 Result := inherited Add(PLinkedListArrayPayload(@Item));
 end;
@@ -1632,10 +1885,9 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function TIntegerLinkedListArray.Remove(Item: Integer): Integer;
+Function TIntegerLinkedListArray.Remove(Item: Integer): TListIndex;
 begin
 Result := inherited Remove(PLinkedListArrayPayload(@Item));
 end;
-
 
 end.
