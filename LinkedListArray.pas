@@ -50,88 +50,72 @@ type
     fFirstUsed:         TArrayIndex;
     fLastUsed:          TArrayIndex;
     Function PayloadPtrFromItemPtr(ItemPtr: PLinkedListArrayItem): PLinkedListArrayPayload; virtual;
-    Function ItemPtrFromPayloadPtr(PayloadPtr: PLinkedListArrayPayload): PLinkedListArrayItem; virtual;
-
+    Function ItemPtrFromPayloadPtr(PayloadPtr: PLinkedListArrayPayload): PLinkedListArrayItem; virtual;  
     Function GetItemPtr(ArrayIndex: TArrayIndex): PLinkedListArrayItem; virtual;
     Function GetPayloadPtr(ArrayIndex: TArrayIndex): PLinkedListArrayPayload; virtual;
     procedure SetPayloadPtr(ArrayIndex: TArrayIndex; Value: PLinkedListArrayPayload); virtual;
     Function GetPayloadPtrListIndex(ListIndex: TListIndex): PLinkedListArrayPayload; virtual;
     procedure SetPayloadPtrListIndex(ListIndex: TListIndex; Value: PLinkedListArrayPayload); virtual;
-
     Function GetCapacity: Integer; override;
     procedure SetCapacity(Value: Integer); override;
     Function GetCount: Integer; override;
     procedure SetCount(Value: Integer); override;
-
     Function CheckArrayIndex(ArrayIndex: TArrayIndex): Boolean; virtual;
     Function CheckListIndex(ListIndex: TListIndex): Boolean; virtual;
     Function CheckArrayIndexAndRaise(ArrayIndex: TArrayIndex; CallingMethod: String = 'CheckArrayIndexAndRaise'): Boolean; virtual;
     Function CheckListIndexAndRaise(ListIndex: TListIndex; CallingMethod: String = 'CheckListIndexAndRaise'): Boolean; virtual;
     procedure RaiseError(const ErrorMessage: String; Values: array of const); overload; virtual;
     procedure RaiseError(const ErrorMessage: String); overload; virtual;
-
     procedure PayloadInit(Payload: PLinkedListArrayPayload); virtual;                       // <<< *
     procedure PayloadFinal(Payload: PLinkedListArrayPayload); virtual;                      // <<< *
     procedure PayloadCopy(SrcPayload,DstPayload: PLinkedListArrayPayload); virtual;         // <<< *
     Function PayloadCompare(Payload1,Payload2: PLinkedListArrayPayload): Integer; virtual;  // <<<
     Function PayloadEquals(Payload1,Payload2: PLinkedListArrayPayload): Boolean; virtual;   // <<< *
-
     procedure DoChange; virtual;    
     procedure FinalizeAllItems; virtual;
     procedure Decouple(ArrayIndex: TArrayIndex); virtual;
     procedure ArrayIndices(ListIndex1,ListIndex2: TListIndex; out ArrayIndex1,ArrayIndex2: TArrayIndex); virtual;
     procedure InternalDelete(ArrayIndex: TArrayIndex); virtual;
-
     Function SortCompare(ListIndex1,ListIndex2: Integer): Integer; virtual;
     Function DefragCompare(Index1,Index2: Integer): Integer; virtual;
     procedure DefragExchange(Index1,Index2: Integer); virtual;
   public
     constructor Create(PayloadSize: TMemSize);
     destructor Destroy; override;
-
     procedure BeginChanging; virtual;
     Function EndChanging: Integer; virtual;
-
     Function LowIndex: Integer; override;
     Function HighIndex: Integer; override;
     Function LowArrayIndex: TArrayIndex; virtual;
     Function HighArrayIndex: TArrayIndex; virtual;
     Function LowListIndex: TListIndex; virtual;
     Function HighListIndex: TListIndex; virtual;
-
     Function PreviousByArray(ArrayIndex: TArrayIndex): TArrayIndex; virtual;
     Function NextByArray(ArrayIndex: TArrayIndex): TArrayIndex; virtual;
     Function PreviousByList(ListIndex: TListIndex): TArrayIndex; virtual;
     Function NextByList(ListIndex: TListIndex): TArrayIndex; virtual;
-
     Function FirstArrayIndex: TArrayIndex; virtual;
     Function LastArrayIndex: TArrayIndex; virtual;
     Function First: PLinkedListArrayPayload; virtual;   // <<<
     Function Last: PLinkedListArrayPayload; virtual;    // <<<
-
     Function CheckIndex(Index: Integer): Boolean; override;    
     Function GetArrayIndex(ListIndex: TListIndex): TArrayIndex; virtual;
     Function GetListIndex(ArrayIndex: TArrayIndex): TListIndex; virtual;
-
     Function IndicesOf(Item: Pointer; out ArrayIndex: TArrayIndex; out ListIndex: TListIndex): Boolean; virtual;  // <<<
     Function ArrayIndexOf(Item: Pointer): TArrayIndex; virtual;                                                   // <<<
     Function ListIndexOf(Item: Pointer): TListIndex; virtual;                                                     // <<<
-
     Function Add(Item: Pointer): TListIndex; virtual;                 // <<<
     procedure Insert(ListIndex: TListIndex; Item: Pointer); virtual;  // <<<
     Function Extract(Item: Pointer): Pointer; virtual;                // <<<
     Function Remove(Item: Pointer): TListIndex; virtual;              // <<<
     procedure Delete(ListIndex: TListIndex); virtual;
     procedure Move(SrcListIndex,DstListIndex: TListIndex); virtual;
-    procedure Exchange(ListIndex1,ListIndex2: TListIndex); virtual;   
-
+    procedure Exchange(ListIndex1,ListIndex2: TListIndex); virtual;
     procedure Clear; virtual;
     procedure Reverse; virtual;
     procedure Sort(Reversed: Boolean = False); virtual;
-
     procedure Defragment; virtual;
     Function ArrayItemIsUsed(ArrayIndex: TArrayIndex): Boolean; virtual;
-
     Function IsEqual(List: TLinkedListArray): Boolean; virtual;
     procedure Assign(List: TLinkedListArray); virtual;
     procedure Append(List: TLinkedListArray); virtual;
@@ -139,7 +123,6 @@ type
     procedure LoadFromStream(Stream: TStream; Buffered: Boolean = False); virtual;
     procedure SaveToFile(const FileName: String; Buffered: Boolean = False); virtual;
     procedure LoadFromFile(const FileName: String; Buffered: Boolean = False); virtual;
-
     property PayloadSize: TMemSize read fPayloadSize;
     property ArrayPointers[ArrayIndex: TArrayIndex]: PLinkedListArrayPayload read GetPayloadPtr;
     property ListPointers[ListIndex: TListIndex]: PLinkedListArrayPayload read GetPayloadPtrListIndex;
@@ -347,8 +330,8 @@ procedure TLinkedListArray.SetCount(Value: Integer);
 var
   Temp:       Integer;
   ArrayIndex: TArrayIndex;
+  TempIndex:  TArrayIndex;
   ItemPtr:    PLinkedListArrayItem;
-  i:          Integer;
 begin
 If (Value <> fCount) and (Value >= 0) then
   begin
@@ -363,7 +346,7 @@ If (Value <> fCount) and (Value >= 0) then
         If CheckArrayIndex(fLastUsed) then
           GetItemPtr(fLastUsed)^.Next := fFirstFree;
         If not CheckArrayIndex(fFirstUsed) then
-          fFirstUsed := fFirstFree;
+          fFirstUsed := ArrayIndex;
         repeat
           ItemPtr := GetItemPtr(ArrayIndex);
           ItemPtr^.Flags := ItemPtr^.Flags or LLA_FLAG_USED;
@@ -378,21 +361,36 @@ If (Value <> fCount) and (Value >= 0) then
           GetItemPtr(fFirstFree)^.Prev := -1
         else
           fLastFree := -1;   
-        fCount := Value;
-        DoChange;
       end
     else
       begin
-        {$message 'reimplement, delete calls shrink which is unwanted'}
         // items will be removed
-        BeginChanging;
-        try
-          For i := HighListIndex downto Value do
-            Delete(i);
-        finally
-          EndChanging;
-        end;
+        Temp := fCount - Value;   // number of items to be removed
+        ArrayIndex := fLastUsed;
+        If CheckArrayIndex(fLastFree) then
+          GetItemPtr(fLastFree)^.Next := ArrayIndex;
+        If not CheckArrayIndex(fFirstFree) then
+          fFirstFree := ArrayIndex;
+        repeat
+          ItemPtr := GetItemPtr(ArrayIndex);
+          PayloadFinal(PayloadPtrFromItemPtr(ItemPtr));
+          ItemPtr^.Flags := ItemPtr^.Flags and not LLA_FLAG_USED;
+          TempIndex := fLastFree;
+          fLastFree := ArrayIndex;
+          ArrayIndex := ItemPtr^.Prev;
+          ItemPtr^.Prev := TempIndex;
+          ItemPtr^.Next := ArrayIndex;
+          fLastUsed := ArrayIndex;
+          Dec(Temp);
+        until Temp <= 0;
+        GetItemPtr(fLastFree)^.Next := -1;
+        If CheckArrayIndex(fLastUsed) then
+          GetItemPtr(fLastUsed)^.Next := -1
+        else
+          fFirstUsed := -1;
       end;
+    fCount := Value;
+    DoChange;
   end;
 end;
 
@@ -1382,8 +1380,41 @@ end;
 //------------------------------------------------------------------------------
 
 procedure TLinkedListArray.Append(List: TLinkedListArray);
+var
+  i:              TListIndex;
+  SelfArrayIndex: TArrayIndex;
+  ListArrayIndex: TArrayIndex;
+  ItemPtr:        PLinkedListArrayItem;
 begin
-{$message 'implement'}
+If List.Count > 0 then
+  begin
+    If (fCount + List.Count) > fCapacity then
+      SetCapacity(fCount + List.Count);
+    SelfArrayIndex := fFirstFree;
+    ListArrayIndex := List.FirstArrayIndex;
+    If CheckArrayIndex(fLastUsed) then
+      GetItemPtr(fLastUsed)^.Next := SelfArrayIndex;
+    If not CheckArrayIndex(fFirstUsed) then
+      fFirstUsed := SelfArrayIndex;
+    For i := List.LowListIndex to List.HighListIndex do
+      begin
+        ItemPtr := GetItemPtr(SelfArrayIndex);
+        ItemPtr^.Flags := ItemPtr^.Flags or LLA_FLAG_USED;
+        PayloadCopy(List.ArrayPointers[ListArrayIndex],PayloadPtrFromItemPtr(ItemPtr));
+        ItemPtr^.Prev := fLastUsed;
+        fLastUsed := SelfArrayIndex;
+        SelfArrayIndex := ItemPtr^.Next;
+        ListArrayIndex := List.NextByArray(ListArrayIndex); 
+        fFirstFree := SelfArrayIndex;
+      end;
+    GetItemPtr(fLastUsed)^.Next := -1;
+    If CheckArrayIndex(fFirstFree) then
+      GetItemPtr(fFirstFree)^.Prev := -1
+    else
+      fLastFree := -1;           
+    fCount := fCount + List.Count;
+    DoChange;  
+  end;
 end;
 
 //------------------------------------------------------------------------------
