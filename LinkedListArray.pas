@@ -9,6 +9,8 @@
 
   Linked list array
 
+    Simple doubly-linked list implemented over an ordinary array. 
+
   ©František Milt 2018-10-21
 
   Version 0.9a (requires extensive testing)
@@ -220,8 +222,7 @@ interface
 
 uses
   Classes,
-  AuxTypes, AuxClasses;
-
+  AuxTypes, AuxClasses;  
 
 {===============================================================================
 --------------------------------------------------------------------------------
