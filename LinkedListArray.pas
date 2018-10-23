@@ -11,9 +11,9 @@
 
     Simple doubly-linked list implemented over an ordinary array. 
 
-  ©František Milt 2018-10-21
+  ©František Milt 2018-10-23
 
-  Version 0.9a (requires extensive testing)
+  Version 0.9.1a (requires extensive testing)
 
   Dependencies:
     AuxTypes     - github.com/ncs-sniper/Lib.AuxTypes
@@ -54,7 +54,8 @@
     Function IndicesOf(Item: @Type@; out ArrayIndex: TArrayIndex; out ListIndex: TListIndex): Boolean; reintroduce;
     Function ArrayIndexOf(Item: @Type@): TArrayIndex; reintroduce;
     Function ListIndexOf(Item: @Type@): TListIndex; reintroduce;
-    Function Add(Item: @Type@): Integer; reintroduce;
+    Function Add(Item: @Type@; out ArrayIndex: TArrayIndex): TListIndex; reintroduce; overload;
+    Function Add(Item: @Type@): TListIndex; reintroduce; overload;
     procedure Insert(ListIndex: TListIndex; Item: @Type@); reintroduce;
     Function Extract(Item: @Type@): @Type@; reintroduce;
     Function Remove(Item: @Type@): Integer; reintroduce;
@@ -193,6 +194,13 @@ Result := inherited ListIndexOf(PLinkedListArrayPayload(@Item));
 end;
 
 //------------------------------------------------------------------------------
+
+Function @ClassName@.Add(Item: @Type@; out ArrayIndex: TArrayIndex): TListIndex;
+begin
+Result := inherited Add(PLinkedListArrayPayload(@Item),ArrayIndex);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function @ClassName@.Add(Item: @Type@): TListIndex;
 begin
@@ -338,7 +346,8 @@ type
     Function IndicesOf(Item: Pointer; out ArrayIndex: TArrayIndex; out ListIndex: TListIndex): Boolean; virtual;
     Function ArrayIndexOf(Item: Pointer): TArrayIndex; virtual;
     Function ListIndexOf(Item: Pointer): TListIndex; virtual;
-    Function Add(Item: Pointer): TListIndex; virtual;
+    Function Add(Item: Pointer; out ArrayIndex: TArrayIndex): TListIndex; overload; virtual;
+    Function Add(Item: Pointer): TListIndex; overload; virtual;
     procedure Insert(ListIndex: TListIndex; Item: Pointer); virtual;
     Function Extract(Item: Pointer): Pointer; virtual;
     Function Remove(Item: Pointer): TListIndex; virtual;
@@ -386,7 +395,8 @@ type
     Function IndicesOf(Item: Integer; out ArrayIndex: TArrayIndex; out ListIndex: TListIndex): Boolean; reintroduce;
     Function ArrayIndexOf(Item: Integer): TArrayIndex; reintroduce;
     Function ListIndexOf(Item: Integer): TListIndex; reintroduce;
-    Function Add(Item: Integer): TListIndex; reintroduce;
+    Function Add(Item: Integer; out ArrayIndex: TArrayIndex): TListIndex; reintroduce; overload;
+    Function Add(Item: Integer): TListIndex; reintroduce; overload;
     procedure Insert(ListIndex: TListIndex; Item: Integer); reintroduce;
     Function Extract(Item: Integer): Integer; reintroduce;
     Function Remove(Item: Integer): TListIndex; reintroduce;
@@ -1175,10 +1185,9 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function TLinkedListArray.Add(Item: Pointer): TListIndex;
+Function TLinkedListArray.Add(Item: Pointer; out ArrayIndex: TArrayIndex): TListIndex;
 var
-  ArrayIndex: TArrayIndex;
-  ItemPtr:    PLinkedListArrayItem;
+  ItemPtr:  PLinkedListArrayItem;
 begin
 Grow;
 // at this point, there MUST be at least one free item
@@ -1201,6 +1210,15 @@ PayloadAdded(PayloadPtrFromItemPtr(ItemPtr));
 Result := fCount;
 Inc(fCount);
 DoChange;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function TLinkedListArray.Add(Item: Pointer): TListIndex;
+var
+  ArrayIndex: TArrayIndex;
+begin
+Result := Add(Item,ArrayIndex);
 end;
 
 //------------------------------------------------------------------------------
@@ -1893,6 +1911,13 @@ Result := inherited ListIndexOf(PLinkedListArrayPayload(@Item));
 end;
 
 //------------------------------------------------------------------------------
+
+Function TIntegerLinkedListArray.Add(Item: Integer; out ArrayIndex: TArrayIndex): TListIndex;
+begin
+Result := inherited Add(PLinkedListArrayPayload(@Item),ArrayIndex);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function TIntegerLinkedListArray.Add(Item: Integer): TListIndex;
 begin
