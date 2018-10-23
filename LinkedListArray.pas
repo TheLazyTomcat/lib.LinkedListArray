@@ -42,6 +42,7 @@
     Function GetItem(ListIndex: TListIndex): @Type@; virtual;
     procedure SetItem(ListIndex: TListIndex; Value: @Type@); virtual;
   //procedure PayloadInit(Payload: PLinkedListArrayPayload); override;
+  //procedure PayloadAdded(Payload: PLinkedListArrayPayload); override;
   //procedure PayloadFinal(Payload: PLinkedListArrayPayload); override;
   //procedure PayloadCopy(SrcPayload,DstPayload: PLinkedListArrayPayload); override;
     Function PayloadCompare(Payload1,Payload2: PLinkedListArrayPayload): Integer; override;
@@ -85,6 +86,17 @@ end;
 //procedure @ClassName@.PayloadInit(Payload: PLinkedListArrayPayload);
 //begin
 //{$MESSAGE WARN 'Implement payload initialization to suit actual type.'}
+//end;
+
+//------------------------------------------------------------------------------
+
+// Method called when a payload is explicitly (ie. using methods Add, Insert,
+// LoadFromStream or LoadFromFile) added to the list.
+// Nothing is done in default implementation.
+
+//procedure @ClassName@.PayloadAdded(Payload: PLinkedListArrayPayload);
+//begin
+//{$MESSAGE WARN 'Implement payload addition to suit actual type.'}
 //end;
 
 //------------------------------------------------------------------------------
@@ -288,6 +300,7 @@ type
     procedure RaiseError(const ErrorMessage: String; Values: array of const); overload; virtual;
     procedure RaiseError(const ErrorMessage: String); overload; virtual;
     procedure PayloadInit(Payload: PLinkedListArrayPayload); virtual;
+    procedure PayloadAdded(Payload: PLinkedListArrayPayload); virtual;
     procedure PayloadFinal(Payload: PLinkedListArrayPayload); virtual;
     procedure PayloadCopy(SrcPayload,DstPayload: PLinkedListArrayPayload); virtual;
     Function PayloadCompare(Payload1,Payload2: PLinkedListArrayPayload): Integer; virtual;
@@ -687,6 +700,15 @@ procedure TLinkedListArray.PayloadInit(Payload: PLinkedListArrayPayload);
 begin
 FillChar(Payload^,fPayloadSize,0);
 end;
+
+//------------------------------------------------------------------------------
+
+{$IFDEF FPCDWM}{$PUSH}W5024{$ENDIF}
+procedure TLinkedListArray.PayloadAdded(Payload: PLinkedListArrayPayload);
+begin
+// nothing to do here
+end;
+{$IFDEF FPCDWM}{$POP}{$ENDIF}
 
 //------------------------------------------------------------------------------
 
@@ -1175,6 +1197,7 @@ fLastUsed := ArrayIndex;
 // add the data and set flags
 System.Move(Item^,ItemPtr^.Payload,fPayloadSize);
 ItemPtr^.Flags := ItemPtr^.Flags or LLA_FLAG_USED;
+PayloadAdded(PayloadPtrFromItemPtr(ItemPtr));
 Result := fCount;
 Inc(fCount);
 DoChange;
@@ -1210,6 +1233,7 @@ If CheckListIndex(ListIndex) then
         // add the data and set flags
         System.Move(Item^,NewItemPtr^.Payload,fPayloadSize);
         NewItemPtr^.Flags := NewItemPtr^.Flags or LLA_FLAG_USED;
+        PayloadAdded(PayloadPtrFromItemPtr(NewItemPtr));
         Inc(fCount);
         DoChange;
       end;
@@ -1239,6 +1263,7 @@ If CheckArrayIndex(ArrayIndex) then
       fFirstFree := ArrayIndex;
     fLastFree := ArrayIndex;
     // reset flag and return the item
+    PayloadFinal(PayloadPtrFromItemPtr(ItemPtr));
     ItemPtr^.Flags := ItemPtr^.Flags and not LLA_FLAG_USED;
     Result := PayloadPtrFromItemPtr(ItemPtr);
     Dec(fCount);
@@ -1708,6 +1733,7 @@ var
   BufferStream: TMemoryStream;
   i:            TListIndex;
   ArrayIndex:   TArrayIndex;
+  ItemPtr:      PLinkedListArrayItem;
 begin
 Clear;
 If Stream.Size - Stream.Position >= fPayloadSize then
@@ -1735,8 +1761,11 @@ If Stream.Size - Stream.Position >= fPayloadSize then
       end;
     // set flags
     For ArrayIndex := LowArrayIndex to TArrayIndex(HighListIndex) do
-      with GetItemPtr(ArrayIndex)^ do
-        Flags := Flags or LLA_FLAG_USED;
+      begin
+        ItemPtr := GetItemPtr(ArrayIndex); 
+        ItemPtr^.Flags := ItemPtr^.Flags or LLA_FLAG_USED;
+        PayloadAdded(PayloadPtrFromItemPtr(ItemPtr));
+      end;
     If fCapacity > fCount then
       begin
         fFirstFree := TArrayIndex(Succ(HighListIndex));
