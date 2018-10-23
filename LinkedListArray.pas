@@ -142,7 +142,7 @@ end;
 
 constructor @ClassName@.Create;
 begin
-inherited Create(SizeOf(Integer));
+inherited Create(SizeOf(@Type@));
 end;
 
 //------------------------------------------------------------------------------
