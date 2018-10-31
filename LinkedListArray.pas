@@ -16,10 +16,10 @@
   Version 0.9.1a (requires extensive testing)
 
   Dependencies:
-    AuxTypes     - github.com/ncs-sniper/Lib.AuxTypes
-    AuxClasses   - github.com/ncs-sniper/Lib.AuxClasses
-    StrRect      - github.com/ncs-sniper/Lib.StrRect
-    IndexSorters - github.com/ncs-sniper/Lib.IndexSorters
+    AuxTypes    - github.com/ncs-sniper/Lib.AuxTypes
+    AuxClasses  - github.com/ncs-sniper/Lib.AuxClasses
+    StrRect     - github.com/ncs-sniper/Lib.StrRect
+    ListSorters - github.com/ncs-sniper/Lib.ListSorters
 
 ===============================================================================}
 (*******************************************************************************
@@ -407,7 +407,7 @@ implementation
 
 uses
   SysUtils, Math,
-  IndexSorters, StrRect;
+  ListSorters, StrRect;
 
 {$IFDEF FPC_DisableWarns}
   {$DEFINE FPCDWM}
@@ -1472,13 +1472,13 @@ end;
 
 procedure TLinkedListArray.Sort(Reversed: Boolean = False);
 var
-  Sorter: TIndexSorter;
+  Sorter: TListSorter;
 begin
 If fCount > 1 then
   begin
     BeginChanging;
     try
-      Sorter := TIndexQuickSorter.Create(SortCompare,Exchange);
+      Sorter := TListQuickSorter.Create(SortCompare,Exchange);
       try
         Sorter.Reversed := Reversed;
         Sorter.Sort(LowListIndex,HighListIndex);
@@ -1547,7 +1547,7 @@ If fCount > 0 then
         until not CheckArrayIndex(ArrayIndex) or not CheckArrayIndex(ItemIndex);
       end;
     // sort items
-    with TIndexQuickSorter.Create(DefragCompare,DefragExchange) do
+    with TListQuickSorter.Create(DefragCompare,DefragExchange) do
     try
       Sort(LowArrayIndex,HighListIndex);
     finally
