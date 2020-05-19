@@ -416,7 +416,7 @@ type
     procedure Insert(ListIndex: TLLAListIndex; Item: PLLAPayload); virtual;
     procedure Move(SrcListIndex,DstListIndex: TLLAListIndex); virtual;
     procedure Exchange(ListIndex1,ListIndex2: TLLAListIndex); virtual;
-    Function Extract(Item: PLLAPayload): PLLAPayload; virtual;
+    Function Extract(Item: PLLAPayload): PLLAPayload; virtual;  // does not call PayloadFinal
     Function Remove(Item: PLLAPayload): TLLAListIndex; virtual;
     procedure Delete(ListIndex: TLLAListIndex); virtual;
     procedure Clear; virtual;
@@ -1510,8 +1510,7 @@ If CheckArrayIndex(ArrayIndex) then
     If not CheckArrayIndex(fFirstFree) then
       fFirstFree := ArrayIndex;
     fLastFree := ArrayIndex;
-    // reset flag and return the item
-    PayloadFinal(PayloadPtrFromItemPtr(ItemPtr));
+    // reset flag and final touches
     SetItemFlagValue(ItemPtr^,LLA_FLAG_USED,False);
     Dec(fCount);
     Shrink;
