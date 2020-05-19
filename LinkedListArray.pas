@@ -19,7 +19,7 @@
     A specialized class (TIntegerLinkedListArray) with Integer item type is
     implemented and provided as an example.
 
-  Version 1.0 (2020-05-19)
+  Version 1.0.1 (2020-05-19)
 
   Last change 2020-05-19
 
@@ -1498,7 +1498,9 @@ begin
 ArrayIndex := ArrayIndexOf(Item);
 If CheckArrayIndex(ArrayIndex) then
   begin
-    ItemPtr := GetItemPtr(ArrayIndex);  
+    ItemPtr := GetItemPtr(ArrayIndex);
+    System.Move(ItemPtr^,fTempPayload^,fPayloadSize);
+    Result := PayloadPtrFromItemPtr(fTempPayload);
     Decouple(ArrayIndex);
     // add to list of free items
     ItemPtr^.Prev := fLastFree;
@@ -1511,8 +1513,8 @@ If CheckArrayIndex(ArrayIndex) then
     // reset flag and return the item
     PayloadFinal(PayloadPtrFromItemPtr(ItemPtr));
     SetItemFlagValue(ItemPtr^,LLA_FLAG_USED,False);
-    Result := PayloadPtrFromItemPtr(ItemPtr);
     Dec(fCount);
+    Shrink;
     DoChange;
   end
 else Result := nil;
@@ -1559,6 +1561,7 @@ If fCapacity > 0 then
     fLastFree := HighArrayIndex;
     fFirstUsed := -1;
     fLastUsed := -1;
+    Shrink;  
     DoChange;
   end;
 end;
