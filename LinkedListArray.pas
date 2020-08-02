@@ -21,7 +21,7 @@
 
   Version 1.0.1 (2020-05-19)
 
-  Last change 2020-05-19
+  Last change 2020-08-02
 
   ©2018-2020 František Milt
 
@@ -262,11 +262,12 @@ end;
 unit LinkedListArray;
 
 {$IFDEF FPC}
-  {$MODE ObjFPC}{$H+}
+  {$MODE ObjFPC}
   {$MODESWITCH CLASSICPROCVARS+}
   {$DEFINE FPC_DisableWarns}
   {$MACRO ON}
 {$ENDIF}
+{$H+}
 
 interface
 
