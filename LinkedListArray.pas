@@ -21,9 +21,9 @@
 
   Version 1.0.1 (2020-05-19)
 
-  Last change 2020-08-02
+  Last change 2022-09-13
 
-  ©2018-2020 František Milt
+  ©2018-2022 František Milt
 
   Contacts:
     František Milt: frantisek.milt@gmail.com
@@ -152,8 +152,8 @@ end;
 
 // This method is called when there is a need to compare two payloads, for
 // example when sorting the list.
-// Must return negative number when Payload1 is higher/larger than Payload2
-// (ie. they are in wrong order), zero when they are equal and positive number
+// Must return positive number when Payload1 is higher/larger than Payload2
+// (ie. they are in wrong order), zero when they are equal and negative number
 // when Payload1 is lower/smaller than Payload2 (when they are in correct order).
 // Has no default implementation.
 // This method must be implemented in derived classes!
@@ -276,9 +276,8 @@ uses
   AuxTypes, AuxClasses;
 
 {===============================================================================
-    Unit-specific exceptions
+    Library-specific exceptions
 ===============================================================================}
-
 type
   ELLAException = class(Exception);
 
@@ -293,7 +292,6 @@ type
                                 TLinkedListArray
 --------------------------------------------------------------------------------
 ===============================================================================}
-
 type
   TLLAListIndex  = Integer;
   TLLAArrayIndex = Integer;
@@ -319,7 +317,7 @@ type
 ===============================================================================}
 type
   TLinkedListArray = class(TCustomListObject)
-  private
+  protected
     fPayloadSize:       TMemSize;
     fPayloadOffset:     PtrUInt;
     fItemSize:          TMemSize;
@@ -330,7 +328,6 @@ type
     fChanged:           Boolean;
     fOnChangeEvent:     TNotifyEvent;
     fOnChangeCallback:  TNotifyCallback;
-  protected
     fTempPayload:       Pointer;
     fFirstFree:         TLLAArrayIndex;
     fLastFree:          TLLAArrayIndex;
@@ -916,8 +913,8 @@ fChanged := True;
 If (fUpdateCounter <= 0) then
   begin
     If Assigned(fOnChangeEvent) then
-      fOnChangeEvent(Self);
-    If Assigned(fOnChangeCallback) then
+      fOnChangeEvent(Self)
+    else If Assigned(fOnChangeCallback) then
       fOnChangeCallback(Self);
   end;
 end;
@@ -1972,7 +1969,7 @@ end;
     TIntegerLinkedListArray - class implementation
 ===============================================================================}
 {-------------------------------------------------------------------------------
-    TIntegerLinkedListArray - private methods
+    TIntegerLinkedListArray - protected methods
 -------------------------------------------------------------------------------}
 
 Function TIntegerLinkedListArray.GetItem(ListIndex: TLLAListIndex): Integer;
